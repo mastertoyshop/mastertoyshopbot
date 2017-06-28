@@ -1,47 +1,56 @@
 <?php
 $access_token = 'UB+6xjNlNCs49EM01ynPq+7LG3GmozpiPCq3ATWTgjWbbm9J5divBda3fBD1yqNLR2EuR2tzT/6YDVWtXDc2bd8AbXUqz+1JoUuihuWBQsrspLxH7+pr67u8ng/ettcldZjB4HdppgpiBKzpjKArJgdB04t89/1O/w1cDnyilFU=';
 
-// Get POST body content
-$content = file_get_contents('php://input');
-// Parse JSON
-$events = json_decode($content, true);
-// Validate parsed JSON data
-if (!is_null($events['events'])) {
-	// Loop through each event
-	foreach ($events['events'] as $event) {
-		// Reply only when message sent is in 'text' format
-		if ($event['type'] == 'message' && $event['message']['type'] == 'text') {
-			// Get text sent
-			$text = $event['message']['text'];
-			// Get replyToken
-			$replyToken = $event['replyToken'];
+var express = require('express')
+var bodyParser = require('body-parser')
+var request = require('request')
+var app = express()
 
-			// Build message to reply back
-			$messages = [
-				'type' => 'text',
-				'text' => $text
-			];
+app.use(bodyParser.json())
 
-			// Make a POST Request to Messaging API to reply to sender
-			$url = 'https://api.line.me/v2/bot/message/reply';
-			$data = [
-				'replyToken' => $replyToken,
-				'messages' => [$messages],
-			];
-			$post = json_encode($data);
-			$headers = array('Content-Type: application/json', 'Authorization: Bearer ' . $access_token);
+app.set('port', (process.env.PORT || 4000))
+app.use(bodyParser.urlencoded({extended: true}))
+app.use(bodyParser.json())
 
-			$ch = curl_init($url);
-			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-			$result = curl_exec($ch);
-			curl_close($ch);
+app.post('/webhook', (req, res) => {
+  var text = req.body.events[0].message.text
+  var sender = req.body.events[0].source.userId
+  var replyToken = req.body.events[0].replyToken
+  console.log(text, sender, replyToken)
+  console.log(typeof sender, typeof text)
+  // console.log(req.body.events[0])
+  if (text === 'สวัสดี' || text === 'Hello' || text === 'hello') {
+    sendText(sender, text)
+  }
+  res.sendStatus(200)
+})
 
-			echo $result . "\r\n";
-		}
-	}
+function sendText (sender, text) {
+  let data = {
+    to: sender,
+    messages: [
+      {
+        type: 'text',
+        text: 'สวัสดีค่ะ เราเป็นผู้ช่วยปรึกษาด้านความรัก สำหรับหมามิ้น 💞'
+      }
+    ]
+  }
+  request({
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer key Api'
+    },
+    url: 'https://api.line.me/v2/bot/message/push',
+    method: 'POST',
+    body: data,
+    json: true
+  }, function (err, res, body) {
+    if (err) console.log('error')
+    if (res) console.log('success')
+    if (body) console.log(body)
+  })
 }
-echo "OK";
+
+app.listen(app.get('port'), function () {
+  console.log('run at port', app.get('port'))
+})
